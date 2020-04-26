@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from collections import Counter
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -16,14 +18,34 @@ def visualize_transformation(A, vectors):
     """Plots original and transformed vectors for a given 2x2 transformation matrix A and a list of 2D vectors."""
     for i, v in enumerate(vectors):
         # Plot original vector.
-        plt.quiver(0.0, 0.0, v[0], v[1], width=0.008, color="blue", scale_units='xy', angles='xy', scale=1,
-                   zorder=4)
-        plt.text(v[0]/2 + 0.25, v[1]/2, "v{0}".format(i), color="blue")
+        plt.quiver(
+            0.0,
+            0.0,
+            v[0],
+            v[1],
+            width=0.008,
+            color="blue",
+            scale_units="xy",
+            angles="xy",
+            scale=1,
+            zorder=4,
+        )
+        plt.text(v[0] / 2 + 0.25, v[1] / 2, "v{0}".format(i), color="blue")
 
         # Plot transformed vector.
         tv = A.dot(v)
-        plt.quiver(0.0, 0.0, tv[0], tv[1], width=0.005, color="magenta", scale_units='xy', angles='xy', scale=1,
-                   zorder=4)
+        plt.quiver(
+            0.0,
+            0.0,
+            tv[0],
+            tv[1],
+            width=0.005,
+            color="magenta",
+            scale_units="xy",
+            angles="xy",
+            scale=1,
+            zorder=4,
+        )
         plt.text(tv[0] / 2 + 0.25, tv[1] / 2, "v{0}'".format(i), color="magenta")
     plt.xlim([-6, 6])
     plt.ylim([-6, 6])
@@ -36,27 +58,115 @@ def visualize_transformation(A, vectors):
 def visualize_vectors(vectors, color="green"):
     """Plots all vectors in the list."""
     for i, v in enumerate(vectors):
-        plt.quiver(0.0, 0.0, v[0], v[1], width=0.006, color=color, scale_units='xy', angles='xy', scale=1,
-                   zorder=4)
+        plt.quiver(
+            0.0,
+            0.0,
+            v[0],
+            v[1],
+            width=0.006,
+            color=color,
+            scale_units="xy",
+            angles="xy",
+            scale=1,
+            zorder=4,
+        )
         plt.text(v[0] / 2 + 0.25, v[1] / 2, "eigv{0}".format(i), color=color)
 
 
 def plot_eigenvectors(A):
     """Plots all eigenvectors of the given 2x2 matrix A."""
-    # TODO: Zad. 4.1. Oblicz wektory własne A. Możesz wykorzystać funkcję np.linalg.eig
-    eigvec = []
-    # TODO: Zad. 4.1. Upewnij się poprzez analizę wykresów, że rysowane są poprawne wektory własne (łatwo tu o pomyłkę).
-    visualize_vectors(eigvec)
+    _, eigvec = np.linalg.eig(A)
+    visualize_vectors(eigvec.T)
 
 
 def EVD_decomposition(A):
-    # TODO: Zad. 4.2. Uzupełnij funkcję tak by obliczała rozkład EVD zgodnie z zadaniem.
+    eig_val, eigvec = np.linalg.eig(A)
+    L = np.diag(eig_val)
+    K = eigvec
+
+    ## Jeżeli macież o rozmiarze 2x2
+    if A.shape == (2, 2):
+        K_inv = (
+            1
+            / (K[0, 0] * K[1, 1] - K[0, 1] * K[1, 0])
+            * np.array([[K[1, 1], -K[0, 1]], [-K[1, 0], K[0, 0]]])
+        )
+    else:
+        K_inv = np.linalg.inv(K)
+
+    # Ostatnia macierz nie jest diagonalizowalna
+    if np.isclose(np.linalg.det(K), 0.0):
+        print(f"Matrix\n{A}\nis not digonalizable")
+    else:
+        print(
+            f"For A =\n{A}\nK @ L @ K_inv=\n{K @ L @ K_inv}\nK=\n{K}\nL=\n{L}\nK_inv=\n{K_inv}"
+        )
     pass
 
 
 def plot_attractors(A, vectors):
     # TODO: Zad. 4.3. Uzupełnij funkcję tak by generowała wykres z atraktorami.
-    pass
+    """Plots original and transformed vectors for a given 2x2 transformation matrix A and a list of 2D vectors."""
+
+    plt.xlim([-6, 6])
+    plt.ylim([-6, 6])
+    plt.margins(0.05)
+    # Plot eigenvectors
+    _, eigvec = np.linalg.eig(A)
+    idx2color = ["orange", "blue", "red", "green"]
+    eigvec = eigvec.T
+    eigvec = np.concatenate([-eigvec, eigvec])
+
+    is_all_eig = False
+    if A[0][0] != 0 and not False in (A / A[0][0] == np.eye(A.shape[0])):
+        is_all_eig = True
+    for vector in vectors:
+        vector = vector / np.linalg.norm(vector)
+        tmp_vec = vector.copy()
+        for _ in range(20):
+            tmp_vec = A @ tmp_vec
+            tmp_vec /= np.linalg.norm(tmp_vec)
+        if is_all_eig:
+            color = "black"
+        else:
+            color = idx2color[
+                int(
+                    np.argmin(
+                        np.linalg.norm(
+                            (eigvec / np.linalg.norm(eigvec, axis=1).reshape((-1, 1)))
+                            - tmp_vec,
+                            axis=1,
+                        )
+                    )
+                )
+            ]
+        plt.quiver(
+            0.0,
+            0.0,
+            vector[0],
+            vector[1],
+            width=0.003,
+            color=color,
+            scale_units="xy",
+            angles="xy",
+            scale=1,
+            zorder=4,
+        )
+    for vector, color in zip(eigvec, idx2color):
+        plt.quiver(
+            0.0,
+            0.0,
+            *vector,
+            width=0.006,
+            color=color,
+            scale_units="xy",
+            angles="xy",
+            scale=1,
+            zorder=5,
+        )
+    plt.xlim(-2, 2)
+    plt.ylim(-2, 2)
+    plt.show()
 
 
 def show_eigen_info(A, vectors):
