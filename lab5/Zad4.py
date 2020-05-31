@@ -15,6 +15,7 @@
 
 # %%
 from sklearn.manifold import MDS, Isomap, TSNE, LocallyLinearEmbedding
+from sklearn.decomposition import PCA
 from sklearn.datasets import fetch_openml
 import os
 import pandas as pd
@@ -25,7 +26,7 @@ DATA_DIR = "data"
 FIGURES_DIR = "figures"
 
 # %%
-os.chdir("lab5")
+# os.chdir("lab5")
 os.listdir(DATA_DIR)
 # MDS()
 
@@ -48,7 +49,7 @@ mnist_X, mnist_y = fetch_openml('mnist_784', version=1, return_X_y=True)
 mnist_colors = np.array([float(label) for label in mnist_y])
 mnist_colors /= np.max(mnist_colors)
 
-indxes = np.random.choice(range(len(mnist_X)), 400, replace=False)
+indxes = np.random.choice(range(len(mnist_X)), 1000, replace=False)
 
 mnist_X_sampled = mnist_X[indxes]
 mnist_colors_sampled = mnist_colors[indxes]
@@ -63,7 +64,7 @@ def plot_reduced(ax, X_transformed, annot_labels=None, colors=None):
 
 methods = [
     (MDS(n_components=2), "MDS sklearn, SMACOF"),
-    (MDS(n_components=2, metric=False), "MDS classic, PCA"),
+    (PCA(n_components=2), "MDS classic, PCA"),
     (Isomap(n_components=2, n_neighbors=3), "Isomap(k=3)"),
     (Isomap(n_components=2, n_neighbors=5), "Isomap(k=5)"),
     (TSNE(n_components=2), "TSNE"),
@@ -79,13 +80,13 @@ data = [
 
 # %%
 
-for dataframe, annot, dataset_name in data:
+for dataframe, annot, dataset_name, color in data:
     fig, axs = plt.subplots(2, 3, constrained_layout=True, figsize=(18.5, 10.5))
     for i, (method, title) in enumerate(methods):
         ax = axs.reshape(-1)[i]
         ax.set_title(title)
         X_transformed = method.fit_transform(dataframe)
-        plot_reduced(ax, X_transformed, annot)
+        plot_reduced(ax, X_transformed, annot, color)
     plt.savefig(os.path.join(FIGURES_DIR, dataset_name) + ".pdf")
     plt.show()
 
